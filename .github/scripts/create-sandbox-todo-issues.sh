@@ -25,6 +25,8 @@ if [[ -z "$AFTER" ]]; then
   exit 1
 fi
 
+REPO_URL="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}"
+
 # Handle initial push (before is all zeros or missing)
 if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]] || [[ -z "$BEFORE" ]]; then
   BEFORE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"  # empty tree SHA
@@ -124,7 +126,7 @@ if [[ -n "$SANDBOX_ENTRIES_UNIQUE" ]]; then
       continue
     fi
 
-    BODY="New sandbox entry detected."$'\n'$'\n'"Path: [sandbox/$entry](sandbox/$entry)"
+    BODY="New sandbox entry detected."$'\n'$'\n'"Path: [sandbox/$entry]($REPO_URL/tree/$AFTER/sandbox/$entry)"
 
     echo "Creating issue: $TITLE"
     gh issue create --title "$TITLE" --label "sandbox" --body "$BODY"
@@ -147,7 +149,7 @@ if [[ -n "$TODO_FILES" ]]; then
       continue
     fi
 
-    BODY="New TODO.md file detected."$'\n'$'\n'"Path: [$todo_path]($todo_path)"
+    BODY="New TODO.md file detected."$'\n'$'\n'"Path: [$todo_path]($REPO_URL/blob/$AFTER/$todo_path)"
 
     echo "Creating issue: $TITLE"
     gh issue create --title "$TITLE" --label "todo" --body "$BODY"
