@@ -1,0 +1,31 @@
+name: Sandbox & TODO Issue Auto-Creation
+
+on:
+  workflow_call:
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout shared scripts
+        uses: actions/checkout@v4
+        with:
+          repository: igor1309/ci-shared
+          path: .ci-shared
+          fetch-depth: 1
+
+      - name: Detect new items and create issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: bash .ci-shared/.github/scripts/create-sandbox-todo-issues.sh

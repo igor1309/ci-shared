@@ -1,0 +1,13 @@
+name: CI
+
+on:
+  push:
+    branches: [trunk]
+
+jobs:
+  # Run Sandbox & TODO workflow
+  sandbox-todo:
+    uses: ./.github/workflows/sandbox-todo-issues.yml
+    permissions:
+      issues: write
+      contents: read
