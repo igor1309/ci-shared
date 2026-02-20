@@ -15,6 +15,9 @@ This repository is intended to be **consumed**, not copied.
   Implementation logic used by reusable workflows.  
   Scripts are checked out and executed by the workflows — client repos do **not** contain copies.
 
+- **Shared local scripts** (`scripts/*`)  
+  Scripts intended to be vendored into client repositories at a pinned commit SHA.
+
 ---
 
 ## Usage (client repositories)
@@ -41,6 +44,11 @@ Notes:
 - Permissions are defined by the caller.
 - Pin the workflow ref to match your stability needs (e.g., a commit SHA or `main`).
 - Shared scripts are intentionally checked out from the default branch (non-pinned), even when the workflow ref is pinned.
+
+For local development scripts in `scripts/*`, use pinned vendoring:
+- Copy the script into the client repo under `vendor/ci-shared/...`.
+- Record source repo/path and commit SHA in the vendored file header.
+- Keep a stable local wrapper entrypoint (for example `./scripts/run_silent.sh`) that delegates to the vendored file.
 
 ---
 
