@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# Telegram transport: send one or more message chunks to a bot/chat.
+# Chunks are delivered sequentially in argument order. Fail-fast on
+# first error; partial delivery is accepted.
+#
+# Usage: notify_telegram.sh <token> <chat_id> <chunk1> [chunk2...]
+#
+# Caller is responsible for message formatting, splitting, and
+# choosing which bot/chat to use.
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
