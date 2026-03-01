@@ -35,6 +35,10 @@ Positional-args API with variadic message chunks. The script sends chunks sequen
 - Script MUST fail-fast: stop on first chunk failure, propagate exit code.
 - Script MUST NOT format, split, or transform messages — caller responsibility.
 - Script MUST NOT choose bot or chat — caller passes via args.
+- Script MUST accept optional `TELEGRAM_PARSE_MODE` env var (`Markdown`, `MarkdownV2`, `HTML`).
+- When `TELEGRAM_PARSE_MODE` is set and non-empty, script MUST add `parse_mode` to the API call.
+- When `TELEGRAM_PARSE_MODE` is unset or empty, script MUST send plain text (backward compatible).
+- `parse_mode` is caller-owned — the script applies it but does not validate or default it.
 - Script MUST live in `ci-shared` at `scripts/notify_telegram.sh`.
 
 ## 5. Consequences
