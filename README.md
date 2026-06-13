@@ -54,6 +54,7 @@ For local development scripts in `scripts/*`, use pinned vendoring:
 
 ## Behavior notes
 
+- Issues are created for newly added `sandbox/` top-level entries, `TODO.md` files, and backlog items (`backlog.md`, or any `.md` added inside a `backlog/` folder).
 - Renames are treated as additions and may trigger new issues.
 - Script changes on the default branch take effect immediately for all callers.
 
