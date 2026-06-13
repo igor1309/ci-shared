@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Creates GitHub Issues for newly added sandbox entries and TODO.md files.
+# Creates GitHub Issues for newly added sandbox entries, TODO.md files, and backlog
+# items (files named backlog.md, or any .md added inside a backlog/ folder).
 # Required environment variables:
 #   BEFORE_SHA - commit SHA before the push
 #   AFTER_SHA  - commit SHA after the push
@@ -45,9 +46,10 @@ fi
 echo "Diff output:"
 echo "$DIFF_OUTPUT"
 
-# Track sandbox entries and TODO.md files
+# Track sandbox entries, TODO.md files, and backlog items
 SANDBOX_ENTRIES=()
 TODO_FILES=""
+BACKLOG_FILES=""
 
 while IFS=$'\t' read -r status path newpath; do
   [[ -z "$status" ]] && continue
@@ -72,6 +74,8 @@ while IFS=$'\t' read -r status path newpath; do
     fi
   fi
 
+  file_basename=$(basename "$path")
+
   # Check for sandbox top-level entries
   if [[ "$path" =~ ^sandbox/([^/]+)(/.*)?$ ]]; then
     entry="${BASH_REMATCH[1]}"
@@ -79,14 +83,25 @@ while IFS=$'\t' read -r status path newpath; do
   fi
 
   # Check for TODO.md files
-  file_basename=$(basename "$path")
   if [[ "$file_basename" == "TODO.md" ]]; then
     TODO_FILES="$TODO_FILES"$'\n'"$path"
+  fi
+
+  # Check for backlog items: a file named backlog.md, or any .md inside a backlog/ folder
+  if [[ "$file_basename" == "backlog.md" ]] || { [[ "$path" =~ (^|/)backlog/ ]] && [[ "$file_basename" == *.md ]]; }; then
+    BACKLOG_FILES="$BACKLOG_FILES"$'\n'"$path"
   fi
 done <<< "$DIFF_OUTPUT"
 
 # Remove leading newline from TODO_FILES
 TODO_FILES="${TODO_FILES#$'\n'}"
+
+# Remove leading newline from BACKLOG_FILES and dedup (backlog.md inside a backlog/
+# folder matches both conditions above)
+BACKLOG_FILES="${BACKLOG_FILES#$'\n'}"
+if [[ -n "$BACKLOG_FILES" ]]; then
+  BACKLOG_FILES=$(printf '%s\n' "$BACKLOG_FILES" | awk '!seen[$0]++')
+fi
 
 SANDBOX_ENTRIES_UNIQUE=""
 if [[ ${#SANDBOX_ENTRIES[@]} -gt 0 ]]; then
@@ -101,6 +116,7 @@ fi
 echo ""
 echo "Detected sandbox entries: $SANDBOX_ENTRIES_DISPLAY"
 echo "Detected TODO.md files: ${TODO_FILES:-none}"
+echo "Detected backlog items: ${BACKLOG_FILES:-none}"
 
 # Ensure required labels exist
 if [[ -n "$SANDBOX_ENTRIES_UNIQUE" ]]; then
@@ -108,6 +124,9 @@ if [[ -n "$SANDBOX_ENTRIES_UNIQUE" ]]; then
 fi
 if [[ -n "$TODO_FILES" ]]; then
   ensure_label_exists "todo" "FBCA04" "TODO.md files requiring attention"
+fi
+if [[ -n "$BACKLOG_FILES" ]]; then
+  ensure_label_exists "backlog" "1D76DB" "backlog.md files and backlog/ folder tickets"
 fi
 
 # Create issues for sandbox entries
@@ -154,6 +173,29 @@ if [[ -n "$TODO_FILES" ]]; then
     echo "Creating issue: $TITLE"
     gh issue create --title "$TITLE" --label "todo" --body "$BODY"
   done <<< "$TODO_FILES"
+fi
+
+# Create issues for backlog items
+if [[ -n "$BACKLOG_FILES" ]]; then
+  while IFS= read -r backlog_path; do
+    [[ -z "$backlog_path" ]] && continue
+    TITLE="[backlog] $backlog_path"
+    echo ""
+    echo "Processing backlog item: $backlog_path"
+
+    # Check if open issue with exact title exists
+    EXISTING=$(gh issue list --state open --search "in:title \"[backlog] $backlog_path\"" --json title --jq ".[] | select(.title == \"$TITLE\") | .title" 2>/dev/null || true)
+
+    if [[ -n "$EXISTING" ]]; then
+      echo "Issue already exists: $TITLE"
+      continue
+    fi
+
+    BODY="New backlog item detected."$'\n'$'\n'"Path: [$backlog_path]($REPO_URL/blob/$AFTER/$backlog_path)"
+
+    echo "Creating issue: $TITLE"
+    gh issue create --title "$TITLE" --label "backlog" --body "$BODY"
+  done <<< "$BACKLOG_FILES"
 fi
 
 echo ""
